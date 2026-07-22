@@ -27,7 +27,7 @@ tip:   d 配合任何 motion 都能删除。换成 c 就是删了进插入模式
 vim-plug：
 
 ```vim
-Plug 'yourname/vim-sensei'
+Plug 'zhangqing0341/vim-sensei'
 ```
 
 ## 配置
