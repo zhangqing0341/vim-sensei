@@ -8,6 +8,15 @@ if exists('g:loaded_sensei')
 endif
 let g:loaded_sensei = 1
 
+" ---- 加载 :SenseiSetup 向导生成的配置文件 (先于默认值, 让保存的配置优先) ----
+if !exists('g:sensei_config_file')
+  let g:sensei_config_file = '~/.sensei.vim'
+endif
+let s:cfg = expand(g:sensei_config_file)
+if filereadable(s:cfg)
+  execute 'source ' . fnameescape(s:cfg)
+endif
+
 " ---- 配置默认值 (在 vimrc 里覆盖) ----
 " 网关地址 (任意 OpenAI 兼容 /chat/completions 接口: OpenAI / LiteLLM / Ollama 等)
 if !exists('g:sensei_endpoint')
@@ -33,10 +42,18 @@ endif
 if !exists('g:sensei_map_default')
   let g:sensei_map_default = 1
 endif
+" 本地 Ollama 默认地址 / 模型 (免 key 兜底)
+if !exists('g:sensei_ollama_url')
+  let g:sensei_ollama_url = 'http://127.0.0.1:11434'
+endif
+if !exists('g:sensei_ollama_model')
+  let g:sensei_ollama_model = 'qwen2.5-coder'
+endif
 
 " ---- 命令 ----
-command! -nargs=+ Sensei call sensei#how(<q-args>)
-command! -nargs=+ How    call sensei#how(<q-args>)
+command! -nargs=+ Sensei     call sensei#how(<q-args>)
+command! -nargs=+ How        call sensei#how(<q-args>)
+command! -nargs=0 SenseiSetup call sensei#setup#run()
 
 " ---- 默认映射 (<Plug> 可自定义) ----
 nnoremap <silent> <Plug>(sensei-how) :call sensei#how(input('怎么操作> '))<CR>

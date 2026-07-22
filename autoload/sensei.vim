@@ -38,29 +38,86 @@ function! s:lang_clause() abort
   return "\n始终用" . l:lang . '讲解 (keys 字段保持原样按键)。'
 endfunction
 
-" 调 OpenAI 兼容网关, 返回 assistant 文本; 出错返回空串并已报错。
-function! sensei#chat(user) abort
-  let l:key = ''
+" 从环境变量 / g:sensei_api_key 取 key (可能为空)
+function! s:read_key() abort
   let l:envname = get(g:, 'sensei_api_key_env', 'SENSEI_API_KEY')
   if !empty(get(g:, 'sensei_api_key', ''))
-    let l:key = g:sensei_api_key
-  elseif !empty($SENSEI_API_KEY) && l:envname ==# 'SENSEI_API_KEY'
-    let l:key = $SENSEI_API_KEY
-  else
-    let l:key = eval('$' . l:envname)
+    return g:sensei_api_key
   endif
-  if empty(l:key)
-    call s:err('未设置 API key。请 export ' . l:envname . '=... 或在 vimrc 里 let g:sensei_api_key = "..."')
-    return ''
+  return eval('$' . l:envname)
+endfunction
+
+" 探测本地 Ollama 是否在跑 (localhost:11434)。结果缓存, 避免每次请求都探。
+let s:ollama_state = -1   " -1 未探测, 0 没有, 1 有
+function! sensei#ollama_running() abort
+  if s:ollama_state != -1
+    return s:ollama_state
+  endif
+  if !executable('curl')
+    let s:ollama_state = 0
+    return 0
+  endif
+  let l:host = get(g:, 'sensei_ollama_url', 'http://127.0.0.1:11434')
+  call system('curl -s -m 2 -o ' . (has('win32') ? 'NUL' : '/dev/null')
+    \ . ' ' . shellescape(l:host . '/api/tags'))
+  let s:ollama_state = (v:shell_error == 0) ? 1 : 0
+  return s:ollama_state
+endfunction
+
+" 判断某 endpoint 是否本地无鉴权类 (Ollama)
+function! s:is_ollama(endpoint) abort
+  return a:endpoint =~? '11434' || a:endpoint =~? 'ollama'
+endfunction
+
+" 解析当前该用的 {endpoint, model, key, no_auth}; 无法确定时返回 {} 并已给出引导。
+" auto: 若用户什么都没配 (仍是 OpenAI 默认端点且无 key), 自动探测本地 Ollama。
+function! sensei#resolve() abort
+  let l:endpoint = g:sensei_endpoint
+  let l:model = g:sensei_model
+  let l:key = s:read_key()
+  let l:default_openai = (l:endpoint =~? 'api\.openai\.com')
+
+  " 用户没配 key、且还停在 OpenAI 默认端点 => 尝试本地 Ollama 兜底 (真·免 key)
+  if empty(l:key) && l:default_openai
+    if sensei#ollama_running()
+      return {
+        \ 'endpoint': get(g:, 'sensei_ollama_url', 'http://127.0.0.1:11434') . '/v1/chat/completions',
+        \ 'model': get(g:, 'sensei_ollama_model', 'qwen2.5-coder'),
+        \ 'key': '', 'no_auth': 1}
+    endif
+    " 啥都没有 => 引导用向导
+    call s:err('还没配置。运行 :SenseiSetup 一步步配好 (或装 Ollama 免 key 本地跑)')
+    return {}
   endif
 
+  " Ollama 类端点无需 key
+  if s:is_ollama(l:endpoint)
+    return {'endpoint': l:endpoint, 'model': l:model, 'key': '', 'no_auth': 1}
+  endif
+
+  " 其余 (OpenAI / LiteLLM / 自建) 需要 key
+  if empty(l:key)
+    call s:err('未设置 API key。运行 :SenseiSetup 配置, 或 export '
+      \ . get(g:, 'sensei_api_key_env', 'SENSEI_API_KEY') . '=...')
+    return {}
+  endif
+  return {'endpoint': l:endpoint, 'model': l:model, 'key': l:key, 'no_auth': 0}
+endfunction
+
+" 调 OpenAI 兼容网关, 返回 assistant 文本; 出错返回空串并已报错。
+function! sensei#chat(user) abort
   if !executable('curl')
     call s:err('找不到 curl, 请先安装 curl 并加入 PATH')
     return ''
   endif
 
+  let l:cfg = sensei#resolve()
+  if empty(l:cfg)
+    return ''
+  endif
+
   let l:payload = {
-    \ 'model': g:sensei_model,
+    \ 'model': l:cfg.model,
     \ 'temperature': 0,
     \ 'max_tokens': get(g:, 'sensei_max_tokens', 500),
     \ 'messages': [
@@ -72,10 +129,12 @@ function! sensei#chat(user) abort
 
   " 用字符串命令 + shellescape: 跨平台由各自 shell 处理 (Windows cmd.exe / *nix sh)
   let l:cmd = 'curl -s -m ' . get(g:, 'sensei_timeout', 30) . ' '
-    \ . shellescape(g:sensei_endpoint)
+    \ . shellescape(l:cfg.endpoint)
     \ . ' -H ' . shellescape('Content-Type: application/json')
-    \ . ' -H ' . shellescape('Authorization: Bearer ' . l:key)
-    \ . ' -d @' . shellescape(l:tmp)
+  if !l:cfg.no_auth
+    let l:cmd .= ' -H ' . shellescape('Authorization: Bearer ' . l:cfg.key)
+  endif
+  let l:cmd .= ' -d @' . shellescape(l:tmp)
   let l:raw = system(l:cmd)
   call delete(l:tmp)
 

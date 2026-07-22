@@ -32,28 +32,41 @@ Plug 'zhangqing0341/vim-sensei'
 
 ## 配置
 
-API key 默认从环境变量读取（不硬编码、不入库）：
+最简单的方式 —— 装好插件后直接运行配置向导，全程问答，自动写好配置：
+
+```vim
+:SenseiSetup
+```
+
+向导会让你三选一：**本地 Ollama**（免费、离线、免 key）、**OpenAI**（填 key）、**自建网关**（LiteLLM 等）。配置存到 `~/.sensei.vim`，下次启动自动加载，不用改 vimrc。
+
+### 真·零配置：本地 Ollama
+
+如果你装了 [Ollama](https://ollama.com) 并拉了模型：
+
+```sh
+ollama pull qwen2.5-coder
+```
+
+插件会**自动探测** `localhost:11434` —— 什么都不用配，`:How` 直接可用，完全免 key、离线。
+
+### 手动配置
+
+也可以直接在 vimrc 里写。API key 建议走环境变量（不入库）：
 
 ```sh
 export SENSEI_API_KEY="sk-..."
 ```
 
-vimrc（OpenAI，用默认端点）：
-
 ```vim
+" OpenAI（用默认端点）
 let g:sensei_model = 'gpt-4o-mini'
-```
 
-自建 LiteLLM 网关：
-
-```vim
+" 自建 LiteLLM 网关
 let g:sensei_endpoint = 'http://127.0.0.1:4000/v1/chat/completions'
 let g:sensei_model    = 'claude-haiku-4-5'
-```
 
-本地 Ollama：
-
-```vim
+" 本地 Ollama
 let g:sensei_endpoint = 'http://127.0.0.1:11434/v1/chat/completions'
 let g:sensei_model    = 'qwen2.5-coder'
 ```
@@ -64,6 +77,7 @@ let g:sensei_model    = 'qwen2.5-coder'
 |-------------|------|
 | `:How <自然语言>` | 描述编辑目标，得到按键讲解 |
 | `:Sensei <自然语言>` | 同上（别名） |
+| `:SenseiSetup` | 交互式配置向导 |
 | `<Leader>ah` | 普通模式弹出输入框 |
 
 ```
@@ -84,6 +98,9 @@ let g:sensei_model    = 'qwen2.5-coder'
 | `g:sensei_language` | `中文` | 讲解语言，改成 `English` 即英文 |
 | `g:sensei_demo` | `1` | 是否允许演示一次 |
 | `g:sensei_map_default` | `1` | 是否创建默认映射 `<Leader>ah` |
+| `g:sensei_config_file` | `~/.sensei.vim` | 向导写入 / 启动加载的配置文件 |
+| `g:sensei_ollama_url` | `http://127.0.0.1:11434` | 本地 Ollama 地址（自动探测用） |
+| `g:sensei_ollama_model` | `qwen2.5-coder` | Ollama 兜底模型 |
 | `g:sensei_timeout` | `30` | curl 超时秒数 |
 | `g:sensei_max_tokens` | `500` | 回复最大 token |
 
