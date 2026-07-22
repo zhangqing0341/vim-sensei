@@ -1,114 +1,120 @@
 # vim-sensei
 
-用自然语言问 vim，AI 教你地道的编辑手法。
+**English** | [简体中文](README.zh-CN.md)
 
-描述一个编辑目标，vim-sensei 返回最地道的按键序列，把每个键拆开讲解，给出等效做法和举一反三的心法。对纯普通模式、可撤销的操作，还能在光标处**演示一次**（之后按 `u` 撤销）。
+Ask vim in plain language — the AI teaches you the idiomatic keystrokes.
 
-目标是让你「在实践中越来越会用 vim」，而不是替你按键。
+Describe an editing goal and vim-sensei returns the most idiomatic key sequence, breaks down what each key does, and offers related tricks plus a takeaway. For pure normal-mode, undoable operations it can even **demo it once** at your cursor (undo with `u`).
+
+The goal is to make you *better at vim through practice* — not to press the keys for you.
 
 ```
-:How 删除到行尾
+:How delete to end of line
 
 Keys:  D   [normal]
-  D 是 d$ 的快捷键：d(删除 operator) + $(到行尾的 motion)。
-alt:   也可以显式写 d$
-tip:   d 配合任何 motion 都能删除。换成 c 就是删了进插入模式；y 就是复制。
-在光标处演示一次? 之后按 u 撤销 (y/n)
+  D is shorthand for d$: d (delete operator) + $ (motion to end of line).
+alt:   d$ spells it out explicitly
+tip:   d pairs with any motion. Swap in c to delete-and-insert; y to yank.
+Demo it once at the cursor? undo with u afterwards (y/n)
 ```
 
-## 依赖
+## Requirements
 
-- Vim 8+（需要 `json_encode()` / `json_decode()`）
-- `curl` 在 PATH 中
-- 一个 OpenAI 兼容的 `/chat/completions` 接口（OpenAI / LiteLLM / Ollama 等）
+- Vim 8+ (needs `json_encode()` / `json_decode()`)
+- `curl` on your `PATH`
+- An OpenAI-compatible `/chat/completions` endpoint (OpenAI / LiteLLM / Ollama / ...)
 
-## 安装
+## Installation
 
-vim-plug：
+vim-plug:
 
 ```vim
 Plug 'zhangqing0341/vim-sensei'
 ```
 
-## 配置
+## Configuration
 
-最简单的方式 —— 装好插件后直接运行配置向导，全程问答，自动写好配置：
+The easiest way — run the setup wizard after installing. It's fully interactive and writes the config for you:
 
 ```vim
 :SenseiSetup
 ```
 
-向导会让你三选一：**本地 Ollama**（免费、离线、免 key）、**OpenAI**（填 key）、**自建网关**（LiteLLM 等）。配置存到 `~/.sensei.vim`，下次启动自动加载，不用改 vimrc。
+The wizard offers three choices: **local Ollama** (free, offline, no key), **OpenAI** (paste a key), or a **custom gateway** (LiteLLM, etc.). Config is saved to `~/.sensei.vim` and auto-loaded on the next launch — no need to touch your vimrc.
 
-### 真·零配置：本地 Ollama
+### True zero-config: local Ollama
 
-如果你装了 [Ollama](https://ollama.com) 并拉了模型：
+If you have [Ollama](https://ollama.com) installed and a model pulled:
 
 ```sh
 ollama pull qwen2.5-coder
 ```
 
-插件会**自动探测** `localhost:11434` —— 什么都不用配，`:How` 直接可用，完全免 key、离线。
+vim-sensei **auto-detects** `localhost:11434` — nothing to configure, `:How` just works, no key, fully offline.
 
-### 手动配置
+### Manual configuration
 
-也可以直接在 vimrc 里写。API key 建议走环境变量（不入库）：
+You can also set it in your vimrc directly. Prefer an environment variable for the API key (keeps it out of version control):
 
 ```sh
 export SENSEI_API_KEY="sk-..."
 ```
 
 ```vim
-" OpenAI（用默认端点）
+" OpenAI (uses the default endpoint)
 let g:sensei_model = 'gpt-4o-mini'
 
-" 自建 LiteLLM 网关
+" Self-hosted LiteLLM gateway
 let g:sensei_endpoint = 'http://127.0.0.1:4000/v1/chat/completions'
 let g:sensei_model    = 'claude-haiku-4-5'
 
-" 本地 Ollama
+" Local Ollama
 let g:sensei_endpoint = 'http://127.0.0.1:11434/v1/chat/completions'
 let g:sensei_model    = 'qwen2.5-coder'
 ```
 
-## 用法
+## Usage
 
-| 命令 / 映射 | 作用 |
-|-------------|------|
-| `:How <自然语言>` | 描述编辑目标，得到按键讲解 |
-| `:Sensei <自然语言>` | 同上（别名） |
-| `:SenseiSetup` | 交互式配置向导 |
-| `<Leader>ah` | 普通模式弹出输入框 |
+| Command / mapping | What it does |
+|-------------------|--------------|
+| `:How <plain language>` | Describe an editing goal, get a keystroke breakdown |
+| `:Sensei <plain language>` | Same thing (alias) |
+| `:SenseiSetup` | Interactive setup wizard |
+| `<Leader>ah` | Prompt for a goal in normal mode |
 
 ```
-:How 复制当前这一整行
-:How 把双引号里的内容整个替换掉
-:How 选中当前段落
-:How 把光标移到文件最后一行
+:How yank this whole line
+:How replace everything inside the double quotes
+:How select the current paragraph
+:How move the cursor to the last line of the file
 ```
 
-## 选项
+## Options
 
-| 变量 | 默认 | 说明 |
-|------|------|------|
-| `g:sensei_endpoint` | OpenAI | OpenAI 兼容接口地址 |
-| `g:sensei_model` | `gpt-4o-mini` | 模型名 |
-| `g:sensei_api_key_env` | `SENSEI_API_KEY` | 读 key 的环境变量名 |
-| `g:sensei_api_key` | — | 直接指定 key（优先于环境变量） |
-| `g:sensei_language` | `中文` | 讲解语言，改成 `English` 即英文 |
-| `g:sensei_demo` | `1` | 是否允许演示一次 |
-| `g:sensei_map_default` | `1` | 是否创建默认映射 `<Leader>ah` |
-| `g:sensei_config_file` | `~/.sensei.vim` | 向导写入 / 启动加载的配置文件 |
-| `g:sensei_ollama_url` | `http://127.0.0.1:11434` | 本地 Ollama 地址（自动探测用） |
-| `g:sensei_ollama_model` | `qwen2.5-coder` | Ollama 兜底模型 |
-| `g:sensei_timeout` | `30` | curl 超时秒数 |
-| `g:sensei_max_tokens` | `500` | 回复最大 token |
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `g:sensei_endpoint` | OpenAI | OpenAI-compatible endpoint URL |
+| `g:sensei_model` | `gpt-4o-mini` | Model name |
+| `g:sensei_api_key_env` | `SENSEI_API_KEY` | Env var name to read the key from |
+| `g:sensei_api_key` | — | Key set directly (takes precedence over env var) |
+| `g:sensei_language` | `中文` | Explanation language; set to `English` for English |
+| `g:sensei_demo` | `1` | Whether to offer the one-time demo |
+| `g:sensei_map_default` | `1` | Whether to create the `<Leader>ah` mapping |
+| `g:sensei_config_file` | `~/.sensei.vim` | File the wizard writes / that's auto-loaded on startup |
+| `g:sensei_ollama_url` | `http://127.0.0.1:11434` | Local Ollama address (for auto-detection) |
+| `g:sensei_ollama_model` | `qwen2.5-coder` | Fallback model when using Ollama |
+| `g:sensei_timeout` | `30` | curl timeout in seconds |
+| `g:sensei_max_tokens` | `500` | Max tokens in the reply |
 
-`:help sensei` 查看完整文档。
+> **Note:** the default explanation language is Chinese. Set `let g:sensei_language = 'English'` for English explanations.
 
-## 工作原理
+Run `:help sensei` for the full documentation.
 
-纯 Vimscript，无外部依赖（除 curl）。请求体用 `json_encode()` 写入临时文件，`curl -d @file` POST 到网关，`json_decode()` 解析。演示用 `feedkeys()`，且仅对 AI 标记为纯普通模式、可撤销（`safe_demo=true`）的按键开放，避免误触发有副作用的操作。
+## How it works
+
+Pure Vimscript, no dependencies beyond curl. The request body is written to a temp file with `json_encode()`, POSTed to the gateway via `curl -d @file`, and parsed with `json_decode()`. The demo uses `feedkeys()` and is only offered for keys the AI marks as pure normal-mode and undoable (`safe_demo=true`), so operations with side effects are never triggered automatically.
+
+If no key is configured and you're still on the default OpenAI endpoint, the plugin probes for a local Ollama instance and uses it key-free when found; otherwise it points you to `:SenseiSetup`.
 
 ## License
 
