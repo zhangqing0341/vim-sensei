@@ -1,0 +1,107 @@
+*sensei.txt*  用自然语言问 vim, AI 教你地道的编辑手法
+
+Author:  你的名字
+License: MIT
+
+==============================================================================
+CONTENTS                                                     *sensei-contents*
+
+    1. Intro ................................ |sensei-intro|
+    2. Requirements ......................... |sensei-requirements|
+    3. Setup ................................ |sensei-setup|
+    4. Usage ................................ |sensei-usage|
+    5. Configuration ........................ |sensei-config|
+    6. How it works ......................... |sensei-internals|
+
+==============================================================================
+1. Intro                                                        *sensei-intro*
+
+vim-sensei 让你用自然语言描述一个编辑目标 (如 "删除到行尾"、"把双引号里的
+内容整个替换掉"), AI 会返回地道的 vim 按键序列, 并把每个键拆开讲解, 给出
+等效做法和举一反三的心法。对纯普通模式、可撤销的操作, 还能在光标处演示一次。
+
+目标是让你"在实践中越来越会用 vim", 而不是替你按键。
+
+==============================================================================
+2. Requirements                                          *sensei-requirements*
+
+- Vim 8+ (需要 |json_encode()| / |json_decode()|)
+- `curl` 在 PATH 中
+- 一个 OpenAI 兼容的 /chat/completions 接口 (OpenAI / LiteLLM / Ollama / ...)
+
+==============================================================================
+3. Setup                                                        *sensei-setup*
+
+用你喜欢的插件管理器安装, 例如 vim-plug: >
+    Plug 'yourname/vim-sensei'
+<
+然后设置网关和 key。默认从环境变量 `SENSEI_API_KEY` 读 key: >
+    export SENSEI_API_KEY="sk-..."
+<
+在 vimrc 里 (OpenAI 示例, 用默认端点即可): >
+    let g:sensei_model = 'gpt-4o-mini'
+<
+自建 LiteLLM 网关示例: >
+    let g:sensei_endpoint = 'http://127.0.0.1:4000/v1/chat/completions'
+    let g:sensei_model    = 'claude-haiku-4-5'
+<
+本地 Ollama 示例: >
+    let g:sensei_endpoint = 'http://127.0.0.1:11434/v1/chat/completions'
+    let g:sensei_model    = 'qwen2.5-coder'
+<
+==============================================================================
+4. Usage                                                        *sensei-usage*
+
+                                                                      *:Sensei* *:How*
+:Sensei {自然语言}       描述一个编辑目标, 得到按键讲解。
+:How {自然语言}          同上 (别名)。
+
+                                                                    *<Plug>(sensei-how)*
+<Leader>ah               普通模式下弹出输入框, 输入目标。
+
+示例: >
+    :How 删除到行尾
+    :How 复制当前这一整行
+    :How 把双引号里的内容整个替换掉
+    :How 选中当前段落
+<
+==============================================================================
+5. Configuration                                               *sensei-config*
+
+                                                             *g:sensei_endpoint*
+    OpenAI 兼容接口地址。默认 'https://api.openai.com/v1/chat/completions'。
+
+                                                                *g:sensei_model*
+    模型名。默认 'gpt-4o-mini'。
+
+                                                         *g:sensei_api_key_env*
+    读 API key 的环境变量名。默认 'SENSEI_API_KEY'。
+
+                                                             *g:sensei_api_key*
+    直接指定 key (优先于环境变量)。不建议写进版本管理的 vimrc。
+
+                                                             *g:sensei_language*
+    讲解语言。默认 '中文'。改成 'English' 即英文讲解。
+
+                                                                 *g:sensei_demo*
+    是否允许"演示一次"。默认 1。设 0 则只讲解不演示。
+
+                                                          *g:sensei_map_default*
+    是否创建默认映射 <Leader>ah。默认 1。设 0 则自行映射: >
+        nmap <Leader>x <Plug>(sensei-how)
+<
+                                                              *g:sensei_timeout*
+    curl 超时秒数。默认 30。
+
+                                                           *g:sensei_max_tokens*
+    回复最大 token。默认 500。
+
+==============================================================================
+6. How it works                                             *sensei-internals*
+
+纯 Vimscript, 无外部依赖 (除 curl)。请求体用 |json_encode()| 写入临时文件,
+`curl -d @file` POST 到网关, |json_decode()| 解析。API key 从环境变量读取,
+不硬编码、不入库。演示用 |feedkeys()|, 且仅对 AI 标记为纯普通模式、可撤销
+(safe_demo=true) 的按键开放, 避免误触发有副作用的操作。
+
+vim:tw=78:ts=8:ft=help:norl:
