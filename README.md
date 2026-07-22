@@ -97,7 +97,7 @@ let g:sensei_model    = 'qwen2.5-coder'
 | `g:sensei_model` | `gpt-4o-mini` | Model name |
 | `g:sensei_api_key_env` | `SENSEI_API_KEY` | Env var name to read the key from |
 | `g:sensei_api_key` | — | Key set directly (takes precedence over env var) |
-| `g:sensei_language` | `中文` | Explanation language; set to `English` for English |
+| `g:sensei_language` | `English` | Explanation language; set to `中文` for Chinese. `:SenseiSetup` asks this too |
 | `g:sensei_demo` | `1` | Whether to offer the one-time demo |
 | `g:sensei_map_default` | `1` | Whether to create the `<Leader>ah` mapping |
 | `g:sensei_config_file` | `~/.sensei.vim` | File the wizard writes / that's auto-loaded on startup |
@@ -105,8 +105,6 @@ let g:sensei_model    = 'qwen2.5-coder'
 | `g:sensei_ollama_model` | `qwen2.5-coder` | Fallback model when using Ollama |
 | `g:sensei_timeout` | `30` | curl timeout in seconds |
 | `g:sensei_max_tokens` | `500` | Max tokens in the reply |
-
-> **Note:** the default explanation language is Chinese. Set `let g:sensei_language = 'English'` for English explanations.
 
 Run `:help sensei` for the full documentation.
 

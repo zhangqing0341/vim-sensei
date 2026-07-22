@@ -125,18 +125,30 @@ function! s:key_storage_lines(key) abort
   return ['let g:sensei_api_key  = ' . string(a:key)]
 endfunction
 
+" 语言选择 (向导第一步, 双语提示)。返回要写入配置的行, 并即时生效。
+function! s:setup_language() abort
+  redraw
+  call s:say('讲解语言 / Explanation language')
+  echo '  1) English (default)'
+  echo '  2) 中文'
+  let l:c = input('Choose / 选择 (1/2, default 1): ')
+  let l:lang = (l:c ==# '2') ? '中文' : 'English'
+  let g:sensei_language = l:lang
+  return ['let g:sensei_language = ' . string(l:lang)]
+endfunction
+
 function! sensei#setup#run() abort
   redraw
-  call s:say('=== vim-sensei 配置向导 ===')
-  echo '选择你的 AI 后端:'
-  echo '  1) 本地 Ollama    —— 免费、离线、免 key (需先装 Ollama)'
-  echo '  2) OpenAI         —— 需要 API key'
-  echo '  3) 自建网关       —— LiteLLM / 兼容 OpenAI 的任意接口'
+  call s:say('=== vim-sensei setup / 配置向导 ===')
+  echo 'Choose your AI backend / 选择 AI 后端:'
+  echo '  1) Local Ollama   —— free, offline, no key (Ollama required) / 本地, 免 key'
+  echo '  2) OpenAI         —— needs an API key / 需要 key'
+  echo '  3) Custom gateway —— LiteLLM / any OpenAI-compatible endpoint / 自建网关'
   " 若探测到 Ollama 在跑, 提示一下
   if sensei#ollama_running()
-    echohl MoreMsg | echo '(检测到本地 Ollama 正在运行, 选 1 可直接用)' | echohl None
+    echohl MoreMsg | echo '(Local Ollama detected — pick 1 to use it now / 检测到 Ollama 运行中)' | echohl None
   endif
-  let l:choice = input('选择 (1/2/3): ')
+  let l:choice = input('Choose / 选择 (1/2/3): ')
   redraw
 
   if l:choice ==# '1'
@@ -146,7 +158,7 @@ function! sensei#setup#run() abort
   elseif l:choice ==# '3'
     let l:lines = s:setup_custom()
   else
-    echohl WarningMsg | echo '无效选择, 已取消。' | echohl None
+    echohl WarningMsg | echo 'Invalid choice, cancelled. / 无效选择, 已取消。' | echohl None
     return
   endif
 
@@ -154,8 +166,15 @@ function! sensei#setup#run() abort
     return
   endif
 
+  " 讲解语言
+  let l:lines += s:setup_language()
+
   let l:path = s:write_config(l:lines)
   redraw
-  echohl Title | echo '✓ 配置已保存到 ' . l:path | echohl None
-  echo '现在就能用了, 试试:  :How 删除到行尾'
+  echohl Title | echo '✓ Config saved to ' . l:path | echohl None
+  if get(g:, 'sensei_language', 'English') ==# 'English'
+    echo "Ready to go — try:  :How delete to end of line"
+  else
+    echo '现在就能用了, 试试:  :How 删除到行尾'
+  endif
 endfunction

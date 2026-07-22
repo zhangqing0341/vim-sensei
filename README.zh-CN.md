@@ -97,7 +97,7 @@ let g:sensei_model    = 'qwen2.5-coder'
 | `g:sensei_model` | `gpt-4o-mini` | 模型名 |
 | `g:sensei_api_key_env` | `SENSEI_API_KEY` | 读 key 的环境变量名 |
 | `g:sensei_api_key` | — | 直接指定 key（优先于环境变量） |
-| `g:sensei_language` | `中文` | 讲解语言，改成 `English` 即英文 |
+| `g:sensei_language` | `English` | 讲解语言，改成 `中文` 即中文（`:SenseiSetup` 也会询问） |
 | `g:sensei_demo` | `1` | 是否允许演示一次 |
 | `g:sensei_map_default` | `1` | 是否创建默认映射 `<Leader>ah` |
 | `g:sensei_config_file` | `~/.sensei.vim` | 向导写入 / 启动加载的配置文件 |

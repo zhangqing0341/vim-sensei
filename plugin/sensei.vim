@@ -30,9 +30,9 @@ endif
 if !exists('g:sensei_api_key_env')
   let g:sensei_api_key_env = 'SENSEI_API_KEY'
 endif
-" 讲解语言
+" 讲解语言 (向导可改; 默认英文, 面向国际用户)
 if !exists('g:sensei_language')
-  let g:sensei_language = '中文'
+  let g:sensei_language = 'English'
 endif
 " 是否允许"演示一次" (纯普通模式且可撤销的按键)
 if !exists('g:sensei_demo')
